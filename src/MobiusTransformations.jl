@@ -196,7 +196,7 @@ Base.:∘(m::MöbiusTransformation, n::MöbiusTransformation) = m * n
 
 #
 # Eval
-#
+# 
 """
     (m::MöbiusTransformation)(z)
 
@@ -216,6 +216,34 @@ function (m::MöbiusTransformation)(z)
     else
         return numer * inv(denom)
     end
+end
+
+#
+# Display
+#
+function Base.show(io::IO, m::MöbiusTransformation)
+    @unpack a, b, c, d = m
+    print(IOContext(io, :compact => true), "Möbius map z --> ($a*z + $b) / ($c*z + $d)")
+end
+
+function Base.show(io::IO, ::MIME"text/plain", m::MöbiusTransformation)
+    string_linear((X, Y)) = "(" * X * ")*z + " * Y
+    @unpack a, b, c, d = m
+    # if abs(c) < NUM_TOL
+    #     A, B = [repr("text/plain", x) for x in [a*inv(d), b*inv(d)]]
+    #     numer = string_linear((A, B))
+    #     print(io, "Möbius:\n   ", numer)
+    # end
+    A, B, C, D = [repr("text/plain", x) for x in [a, b, c, d]]
+    numer, denom = string_linear.([(A, B), (C, D)])
+    newline = "\n   "
+    hline = reduce(*, fill("–", maximum(length, [numer, denom])))
+
+    ## Print message
+    print(io, "Möbius: ", eltype(m), newline,
+        numer, newline,
+        hline, newline,
+        denom)
 end
 
 end # of module MobiusTransformations.
