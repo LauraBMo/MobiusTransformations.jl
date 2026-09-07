@@ -1,6 +1,7 @@
 module MobiusTransformations
 
 using UnPack: @unpack
+import LinearAlgebra: det, normalize
 
 export Mobius, Möbius, set_infinity
 
@@ -146,11 +147,32 @@ end
 # Vectorized operations
 Base.broadcastable(m::MöbiusTransformation) = Ref(m)
 
+function Base.Matrix(m::MöbiusTransformation)
+    @unpack a, b, c, d = m
+    return [a b; c d]
+end
+
+function det(m::MöbiusTransformation)
+    @unpack a, b, c, d = m
+    return a * d - b * c
+end
+
+"""
+    normalize(m::MöbiusTransformation)
+
+Returns a Möbius transformation `m2` such that `m2 == m` and `det(m2) = 1`.
+Requires `sqrt(det(m))` to be defined in the coefficient field.
+"""
+normalize(m::MöbiusTransformation) = m * inv(sqrt(det(m)))
+
 # Inverse Möbius transformation
 function Base.inv(m::MöbiusTransformation)
     @unpack a, b, c, d = m
     MöbiusTransformation(d, -b, -c, a)
 end
+
+Base.:(*)(λ, m::MöbiusTransformation) = Möbius(λ.*Matrix(m))
+Base.:(*)(m::MöbiusTransformation, λ) = *(λ, m)
 
 """
     *(m::MöbiusTransformation, n::MöbiusTransformation)
