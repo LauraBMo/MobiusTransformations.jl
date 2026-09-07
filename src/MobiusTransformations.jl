@@ -1,5 +1,7 @@
 module MobiusTransformations
 
+using UnPack: @unpack
+
 export Mobius, Möbius, set_infinity
 
 const INF = Ref{Any}(complex(Inf))
@@ -115,5 +117,83 @@ Möbius(source, target) = Möbius(source..., target...)
 Returns the identity Möbius transformation of type `T`.
 """
 Möbius(::Type{T}=ComplexF64) where T = Möbius(one(T), zero(T), zero(T), one(T))
+
+"""
+    isone(m::MöbiusTransformation)
+
+Return `true` if `m` is the identity Mobius transformation and `false` otherwise.
+"""
+function Base.isone(m::MöbiusTransformation)
+    @unpack a, b, c, d = m
+    return iszero(b) && iszero(c) && (a == d)
+end
+
+Base.:(==)(m::MöbiusTransformation, n::MöbiusTransformation) = isone(m * inv(n))
+
+# TODO
+# ≈(m::MöbiusTransformation, n::MöbiusTransformation) = isapproxone(m*inv(n))
+
+Base.eltype(_::MöbiusTransformation{T}) where {T} = T
+
+function Base.hash(m::MöbiusTransformation, h::UInt64=UInt64(0))
+    z = 0.0 + 0.0 * im # kludge to make -0.0 and -0.0im into +versions
+    a = m(0) + z
+    b = m(1) + z
+    c = m(Inf) + z
+    return hash(a, hash(b, hash(c, h)))
+end
+
+# Vectorized operations
+Base.broadcastable(m::MöbiusTransformation) = Ref(m)
+
+# Inverse Möbius transformation
+function Base.inv(m::MöbiusTransformation)
+    @unpack a, b, c, d = m
+    MöbiusTransformation(d, -b, -c, a)
+end
+
+"""
+    *(m::MöbiusTransformation, n::MöbiusTransformation)
+
+Compose two Möbius transformations.
+"""
+function Base.:(*)(m::MöbiusTransformation, n::MöbiusTransformation)
+    @unpack a, b, c, d = n
+    e, f, g, h = a, b, c, d
+    @unpack a, b, c, d = m
+    MöbiusTransformation(a * e + b * g, a * f + b * h,
+                         c * e + d * g, c * f + d * h)
+end
+
+"""
+    ∘(m::MöbiusTransformation, n::MöbiusTransformation)
+
+Compose two Möbius transformations (same as *).
+"""
+Base.:∘(m::MöbiusTransformation, n::MöbiusTransformation) = m * n
+
+#
+# Eval
+#
+"""
+    (m::MöbiusTransformation)(z)
+
+Apply to a number z the Möbius transformation
+`m(z) = (a*z + b) / (c*z + d)`, where `m = Möbius([a b; c d])`.
+"""
+function (m::MöbiusTransformation)(z)
+    @unpack a, b, c, d = m
+    if isinf(z)
+        numer, denom = a, c
+    else
+        numer, denom = a * z + b, c * z + d
+    end
+
+    if abs(denom) == 0
+        return INF[]
+    else
+        return numer * inv(denom)
+    end
+end
 
 end # of module MobiusTransformations.
