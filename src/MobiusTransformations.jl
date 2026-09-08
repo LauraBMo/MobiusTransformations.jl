@@ -5,16 +5,35 @@ import LinearAlgebra: det, normalize
 
 export Mobius, Möbius, set_infinity
 
+"""
+    INF
+
+The package's current value for infinity.
+Defaults to `complex(Inf)`, change it with [`set_infinity`](@ref).
+"""
 const INF = Ref{Any}(complex(Inf))
 
 """
     set_infinity(infinity)
 
-Sets the representation of infinity used by the package.
+Set the value the package uses to represent infinity (stored in `INF`).
+The default is `complex(Inf)`.
+
+Use a field with its own infinity, e.g. `set_infinity(Nemo.inf)` over a Nemo number field.
 """
 function set_infinity(infinity)
     INF[] = infinity
 end
+
+"""
+    _isinf(z)
+
+Return `true` if `z` is the point at infinity: the configured `INF[]`, or —
+where `isinf` is defined (e.g. `Float64`/`ComplexF64`, AbstractAlgebra's
+`PosInf`) — `isinf(z)`. Ring elements such as number-field elements have no
+`isinf`, so they fall back to the `== INF[]` test alone.
+"""
+_isinf(z) = (z == INF[]) || (applicable(isinf, z) && isinf(z))
 
 # Möbius transformation
 """
@@ -77,11 +96,11 @@ Returns the Möbius transformation that maps `[0, 1, Inf]` to points `[x, y, z]`
 Values of `Inf` are permitted.
 """
 function Möbius(x, y, z)
-    if isinf(x)
+    if _isinf(x)
         return Möbius(z, y - z, one(x), zero(x))
-    elseif isinf(y)
+    elseif _isinf(y)
         return Möbius(-z, x, -one(x), one(x))
-    elseif isinf(z)
+    elseif _isinf(z)
         return Möbius(y - x, x, zero(x), one(x))
     else
         xy, yz = y - x, z - y
@@ -156,14 +175,15 @@ Base.eltype(_::MöbiusTransformation{T}) where {T} = T
 """
     hash(m::MöbiusTransformation, h::UInt64)
 
-Return a hash for `m`, based on its values at `0`, `1`, and `Inf`.
+Return a hash for `m`, based on its values at `0`, `1`, and the point at
+infinity (`INF[]`).
 """
 function Base.hash(m::MöbiusTransformation, h::UInt64=UInt64(0))
-    z = 0.0 + 0.0 * im # kludge to make -0.0 and -0.0im into +versions
-    a = m(0) + z
-    b = m(1) + z
-    c = m(Inf) + z
-    return hash(a, hash(b, hash(c, h)))
+    a = m(0)
+    b = m(1)
+    c = m(INF[])
+    z = zero(a)   # normalizes -0.0 → 0.0 (identity for non-floating types)
+    return hash(a + z, hash(b + z, hash(c + z, h)))
 end
 
 # Vectorized operations
@@ -207,8 +227,8 @@ normalize(m::MöbiusTransformation) = m * inv(sqrt(det(m)))
 """
     inv(m::MöbiusTransformation)
 
-Return the inverse Möbius transformation. For `m = Möbius(a, b, c, d)`,
-`inv(m)` has coefficients `(d, -b, -c, a)`.
+Return the inverse Möbius transformation. For `m = Möbius(a, b, c, d)`, we have 
+`Matrix(inv(m)) = [d, -b; -c, a]`.
 """
 function Base.inv(m::MöbiusTransformation)
     @unpack a, b, c, d = m
@@ -250,20 +270,22 @@ Base.:∘(m::MöbiusTransformation, n::MöbiusTransformation) = m * n
 """
     (m::MöbiusTransformation)(z)
 
-Apply to a number z the Möbius transformation
-`m(z) = (a*z + b) / (c*z + d)`, where `m = Möbius([a b; c d])`.
+Apply the Möbius transformation to a point `z`, giving
+`m(z) = (a*z + b) / (c*z + d)`.
 
-Values of `Inf` are permitted.
+The point at infinity — by default `Inf`, or the value set by
+[`set_infinity`](@ref) — is accepted and evaluates to the limit `a / c`.
+A pole (vanishing denominator) evaluates to [`INF`](@ref).
 """
 function (m::MöbiusTransformation)(z)
     @unpack a, b, c, d = m
-    if isinf(z)
+    if _isinf(z)
         numer, denom = a, c
     else
         numer, denom = a * z + b, c * z + d
     end
 
-    if abs(denom) == 0
+    if iszero(denom)
         return INF[]
     else
         return numer * inv(denom)
