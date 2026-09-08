@@ -1,6 +1,6 @@
 # MobiusTransformations.jl
 
-[![Stable](https://img.shields.io/badge/docs-stable-blue.svg)](https://LauraBMo.github.io/MobiusTransformations.jl/stable/) [![Dev](https://img.shields.io/badge/docs-dev-blue.svg)](https://LauraBMo.github.io/MobiusTransformations.jl/dev/) [![Build Status](https://github.com/LauraBMo/MobiusTransformations.jl/actions/workflows/CI.yml/badge.svg?branch=main)](https://github.com/LauraBMo/MobiusTransformations.jl/actions/workflows/CI.yml?query=branch%3Amain)
+[![Stable](https://img.shields.io/badge/docs-stable-blue.svg)](https://LauraBMo.github.io/MobiusTransformations.jl/stable/) [![Dev](https://img.shields.io/badge/docs-dev-blue.svg)](https://LauraBMo.github.io/MobiusTransformations.jl/dev/) [![Build Status](https://github.com/LauraBMo/MobiusTransformations.jl/actions/workflows/CI.yml/badge.svg?branch=main)](https://github.com/LauraBMo/MobiusTransformations.jl/actions/workflows/CI.yml?query=branch%3Amain) [![Coverage](https://codecov.io/gh/LauraBMo/MobiusTransformations.jl/branch/main/graph/badge.svg)](https://codecov.io/gh/LauraBMo/MobiusTransformations.jl)
 
 A Möbius transformation is a rational function of the form
 
