@@ -86,6 +86,28 @@ julia> Matrix(m)                       # [a b; c d]
 
 `Mobius` is an ASCII alias for `Möbius`.
 
+## Exact fields and Nemo
+
+The three-point construction is adapted from `mobius.jl` in
+[ComplexRegions.jl](https://github.com/complexvariables/ComplexRegions.jl).
+Unlike that code, which branches on `isinf` and returns a hardcoded
+`complex(abs(num)/abs(den))` at a pole, this package stores coefficients
+parametrically and uses a local `_isinf`, so maps work over any field — including
+exact fields where `isinf` isn't defined. Over a Nemo number field, point the
+package at the field's own infinity:
+
+```julia
+using MobiusTransformations, Nemo
+R, x = polynomial_ring(QQ, "x")
+K, a = number_field(x^2 + 1, "a")     # ℚ(i)
+m = Möbius(K(1), K(2), K(3), K(4))    # z ↦ (z + 2)/(3z + 4)
+set_infinity(Nemo.inf)
+m(-K(4)//K(3))                        # pole → Nemo.inf, not complex(Inf)
+```
+
+If you currently use ComplexRegions.jl's `mobius.jl` for Möbius maps, this package
+is a standalone drop-in with exact-field support.
+
 ## Attribution
 
 This package is derived from the Möbius-transform code in
