@@ -7,6 +7,7 @@ makedocs(;
     modules=[MobiusTransformations],
     authors="LauBMo <laurea987@gmail.com> and contributors",
     sitename="MobiusTransformations.jl",
+    checkdocs=:exports,
     format=Documenter.HTML(;
         canonical="https://LauraBMo.github.io/MobiusTransformations.jl",
         edit_link="main",
@@ -14,6 +15,10 @@ makedocs(;
     ),
     pages=[
         "Home" => "index.md",
+        "Construction" => "construction.md",
+        "Evaluation" => "evaluation.md",
+        "Operations" => "operations.md",
+        "Set Infinity" => "infinity.md",
     ],
 )
 
