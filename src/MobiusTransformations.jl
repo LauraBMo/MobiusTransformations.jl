@@ -52,6 +52,12 @@ Creates a [`MöbiusTransformation`](@ref) with coefficients `a`, `b`, `c`, `d`.
 """
 Möbius(a, b, c, d) = MöbiusTransformation(a, b, c, d)
 
+"""
+    Mobius
+
+ASCII alias for `Möbius`. Provided for convenience when typing `ö`
+is cumbersome.
+"""
 const Mobius = Möbius   # for us lazy Americans
 
 """
@@ -129,13 +135,29 @@ function Base.isone(m::MöbiusTransformation)
     return iszero(b) && iszero(c) && (a == d)
 end
 
+"""
+    ==(m::MöbiusTransformation, n::MöbiusTransformation)
+
+Return `true` if `m` and `n` are equal as projective transformations, i.e.
+`m * inv(n)` is the identity.
+"""
 Base.:(==)(m::MöbiusTransformation, n::MöbiusTransformation) = isone(m * inv(n))
 
 # TODO
 # ≈(m::MöbiusTransformation, n::MöbiusTransformation) = isapproxone(m*inv(n))
 
+"""
+    eltype(m::MöbiusTransformation{T}) where {T}
+
+Return the coefficient type `T` of `m`.
+"""
 Base.eltype(_::MöbiusTransformation{T}) where {T} = T
 
+"""
+    hash(m::MöbiusTransformation, h::UInt64)
+
+Return a hash for `m`, based on its values at `0`, `1`, and `Inf`.
+"""
 function Base.hash(m::MöbiusTransformation, h::UInt64=UInt64(0))
     z = 0.0 + 0.0 * im # kludge to make -0.0 and -0.0im into +versions
     a = m(0) + z
@@ -145,13 +167,29 @@ function Base.hash(m::MöbiusTransformation, h::UInt64=UInt64(0))
 end
 
 # Vectorized operations
+"""
+    broadcastable(m::MöbiusTransformation)
+
+Return `Ref(m)` so that `m.(z)` broadcasts elementwise over `z` rather than
+treating `m` as a collection.
+"""
 Base.broadcastable(m::MöbiusTransformation) = Ref(m)
 
+"""
+    Matrix(m::MöbiusTransformation)
+
+Return the `2×2` coefficient matrix `[a b; c d]` of `m`.
+"""
 function Base.Matrix(m::MöbiusTransformation)
     @unpack a, b, c, d = m
     return [a b; c d]
 end
 
+"""
+    det(m::MöbiusTransformation)
+
+Return the determinant `a*d - b*c` of the coefficient matrix of `m=Möbius(a, b, c, d)`.
+"""
 function det(m::MöbiusTransformation)
     @unpack a, b, c, d = m
     return a * d - b * c
@@ -166,11 +204,23 @@ Requires `sqrt(det(m))` to be defined in the coefficient field.
 normalize(m::MöbiusTransformation) = m * inv(sqrt(det(m)))
 
 # Inverse Möbius transformation
+"""
+    inv(m::MöbiusTransformation)
+
+Return the inverse Möbius transformation. For `m = Möbius(a, b, c, d)`,
+`inv(m)` has coefficients `(d, -b, -c, a)`.
+"""
 function Base.inv(m::MöbiusTransformation)
     @unpack a, b, c, d = m
     MöbiusTransformation(d, -b, -c, a)
 end
 
+"""
+    *(λ, m::MöbiusTransformation)
+    *(m::MöbiusTransformation, λ)
+
+Scale every coefficient of `m` by the scalar `λ`.
+"""
 Base.:(*)(λ, m::MöbiusTransformation) = Möbius(λ.*Matrix(m))
 Base.:(*)(m::MöbiusTransformation, λ) = *(λ, m)
 
@@ -202,6 +252,8 @@ Base.:∘(m::MöbiusTransformation, n::MöbiusTransformation) = m * n
 
 Apply to a number z the Möbius transformation
 `m(z) = (a*z + b) / (c*z + d)`, where `m = Möbius([a b; c d])`.
+
+Values of `Inf` are permitted.
 """
 function (m::MöbiusTransformation)(z)
     @unpack a, b, c, d = m
