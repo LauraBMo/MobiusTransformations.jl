@@ -170,13 +170,32 @@ const MT = MobiusTransformations
         @test Matrix(Möbius(1, 2, 3, 4)) == [1 2; 3 4]
 
         m = Möbius(0, 1, 1, 0)  # z -> 1/z
+        # m broadcasts as a scalar (not over its four coefficients)
+        @test Base.broadcastable(m) isa Ref
         @test m.([1, 2, 4]) ≈ [1, 0.5, 0.25]
+        @test m.([1 2; 4 8]) ≈ [1 0.5; 0.25 0.125]              # 2-d
+        @test m.([1, 1im, 2 + 2im]) ≈ [1, -1im, 0.25 - 0.25im]  # complex
     end
 
     @testset "display" begin
         m = Möbius(1, 2, 3, 4)
         @test occursin("Möbius", sprint(show, m))
         @test occursin("Möbius", sprint(show, MIME("text/plain"), m))
+    end
+
+    @testset "set_infinity" begin
+        @test MT.INF[] == complex(Inf)   # default
+
+        m = Möbius(0, 1, 1, 0)           # z -> 1/z, pole at 0
+        try
+            set_infinity(42)
+            @test MT.INF[] == 42
+            @test m(0) == 42             # pole returns the configured infinity
+            @test m(42) == 0             # configured infinity accepted on input
+        finally
+            set_infinity(complex(Inf))   # restore the default
+        end
+        @test MT.INF[] == complex(Inf)
     end
 
     @testset "Aqua quality checks" begin
